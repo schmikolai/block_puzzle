@@ -1,0 +1,13 @@
+div#game_container {
+    position: relative;
+}
+
+canvas#game_canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+canvas.piece_canvas {
+    position: absolute;
+}
