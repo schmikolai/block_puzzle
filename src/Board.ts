@@ -7,11 +7,11 @@ class InvalidPositionError extends Error {
     }
 }
 
-export enum BoardLabel {
-    Empty,
-    Filled,
+export enum TileLabel {
+    Empty = 0,
+    Filled = 1,
+    WillBreak = 3,
     CurrentPiece = 9,
-    WillBreak
 }
 
 
@@ -20,16 +20,16 @@ export class Board {
     public static CLEAR_REGIONS: number[][] = [];
 
 
-    private _fixedBoard: BoardLabel[];
-    private _visibleBoard: BoardLabel[];
+    private _fixedTiles: TileLabel[];
+    private _shownTiles: TileLabel[];
 
     public constructor() {
 
-        this._fixedBoard = [];
-        this._visibleBoard = [];
+        this._fixedTiles = [];
+        this._shownTiles = [];
 
         for (let i = 0; i < Board.BOARD_SIZE ** 2; i++) {
-            this._fixedBoard.push(BoardLabel.Empty);
+            this._fixedTiles.push(TileLabel.Empty);
 
             // if (i % 4 == 0) this.visibleBoard.push(BoardLabel.Empty);
             // if (i % 4 == 1) this.visibleBoard.push(BoardLabel.Filled);
@@ -40,12 +40,12 @@ export class Board {
         this.resetVisibleBoard();
     }
 
-    public get visibleBoard() {
-        return this._visibleBoard;
+    public get tiles() {
+        return this._shownTiles;
     }
 
     public get numberOfFilledBlocks(): number {
-        return this._fixedBoard.filter(b => b === BoardLabel.Filled || b === BoardLabel.CurrentPiece).length
+        return this._fixedTiles.filter(b => b === TileLabel.Filled || b === TileLabel.CurrentPiece).length
     }
 
     public get numberOfEdges(): number {
@@ -57,8 +57,8 @@ export class Board {
                 const vIndexB = Board.positionToIndex([i, j + 1]);
                 const hIndexA = Board.positionToIndex([j, i]);
                 const hIndexB = Board.positionToIndex([j + 1, i]);
-                if (this._fixedBoard[vIndexA] + this._fixedBoard[vIndexB] == 1) numberOfEdges++;
-                if (this._fixedBoard[hIndexA] + this._fixedBoard[hIndexB] == 1) numberOfEdges++;
+                if (this._fixedTiles[vIndexA] + this._fixedTiles[vIndexB] == 1) numberOfEdges++;
+                if (this._fixedTiles[hIndexA] + this._fixedTiles[hIndexB] == 1) numberOfEdges++;
             }
         }
         return numberOfEdges
@@ -66,7 +66,7 @@ export class Board {
 
     public clone() {
         const clone = new Board();
-        clone._fixedBoard = [...this._fixedBoard];
+        clone._fixedTiles = [...this._fixedTiles];
         return clone;
     }
 
@@ -77,14 +77,14 @@ export class Board {
     public previewPiece(piece: Piece, piecePosition: number[]) {
         if (!this.isValidPiecePosition(piece, piecePosition)) throw new InvalidPositionError();
 
-        this._visibleBoard = [...this._fixedBoard];
+        this._shownTiles = [...this._fixedTiles];
         piece.blocks.forEach(blockPositionOnPiece => {
             const blockPositionOnBoard = [
                 blockPositionOnPiece[0] + piecePosition[0],
                 blockPositionOnPiece[1] + piecePosition[1]
             ]
             const blockIndexOnBoard = Board.positionToIndex(blockPositionOnBoard);
-            this._visibleBoard[blockIndexOnBoard] = BoardLabel.CurrentPiece;
+            this._shownTiles[blockIndexOnBoard] = TileLabel.CurrentPiece;
         });
 
         this.findRegionsThatWillClear();
@@ -101,7 +101,7 @@ export class Board {
                 blockPositionOnPiece[1] + piecePosition[1]
             ]
             const blockIndexOnBoard = Board.positionToIndex(blockPositionOnBoard);
-            this._fixedBoard[blockIndexOnBoard] = BoardLabel.Filled;
+            this._fixedTiles[blockIndexOnBoard] = TileLabel.Filled;
             score++;
         });
 
@@ -125,13 +125,13 @@ export class Board {
                 blockPositionOnBoard[1] >= Board.BOARD_SIZE
             ) return false;
             const blockIndexOnBoard = Board.positionToIndex(blockPositionOnBoard);
-            if (this._fixedBoard[blockIndexOnBoard] === BoardLabel.Filled) return false;
+            if (this._fixedTiles[blockIndexOnBoard] === TileLabel.Filled) return false;
         }
         return true;
     }
 
     public resetVisibleBoard() {
-        this._visibleBoard = [...this._fixedBoard];
+        this._shownTiles = [...this._fixedTiles];
     }
 
     private findRegionsThatWillClear() {
@@ -139,14 +139,14 @@ export class Board {
 
         Board.CLEAR_REGIONS.forEach(region => {
             for (let i = 0; i < region.length; i++) {
-                if (this._visibleBoard[region[i]] === BoardLabel.Empty) return;
+                if (this._shownTiles[region[i]] === TileLabel.Empty) return;
             }
             regionsToClear.push(region);
         });
 
         for (const region of regionsToClear) {
             for (const block of region) {
-                this._visibleBoard[block] = BoardLabel.WillBreak;
+                this._shownTiles[block] = Math.max(TileLabel.WillBreak, this._shownTiles[block]);
             }
         }
     }
@@ -156,7 +156,7 @@ export class Board {
 
         Board.CLEAR_REGIONS.forEach(region => {
             for (let i = 0; i < region.length; i++) {
-                if (this._fixedBoard[region[i]] === BoardLabel.Empty) return;
+                if (this._fixedTiles[region[i]] === TileLabel.Empty) return;
             }
             regionsToClear.push(region);
         });
@@ -166,7 +166,7 @@ export class Board {
         for (const region of regionsToClear) {
             clearScore += 20;
             for (const block of region) {
-                this._fixedBoard[block] = BoardLabel.Empty;
+                this._fixedTiles[block] = TileLabel.Empty;
             }
         }
 

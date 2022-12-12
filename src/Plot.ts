@@ -10,11 +10,15 @@ export class Plot {
         if (!debugContainer) throw Error("unable to create chart");
         const chartCanvas = document.createElement("canvas");
         debugContainer.append(chartCanvas);
+        const labels = [];
+        for (let i = 0; i < Plot.MAX_DATAPOINTS; i++) {
+            labels.unshift(-i);
+        }
         this._chart = new Chart(chartCanvas,
             {
                 type: "line",
                 data: {
-                    labels: [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+                    labels,
                     datasets: [
                         {
                             label: "Number of evaluated moves",

@@ -1,24 +1,25 @@
-import { Board, BoardLabel } from "./Board";
+import { Board, TileLabel } from "./Board";
 import { Piece } from "./Piece";
 
 
 export class PlacablePiece {
     public piece!: Piece;
+    public placable!: boolean;
     public floatPosition!: number[];
 }
 
 export class UI {
     public static readonly BLOCK_SIZE = 40;
-    public static readonly GAP_SIZE = 6;
+    public static readonly GAP_SIZE = 2;
     public static readonly POSITION_OFFSET = [15, 15];
 
     public static readonly COLORS = {
-        filled: "#0045ff",
-        emptyA: "#aaa",
-        emptyB: "#ddd",
-        willBreak: "#444",
-        piecePreview: "#00b000",
-        piece: "#7777ffad"
+        filled: "#3232d8",
+        emptyA: "#797979",
+        emptyB: "#5c5c5c",
+        willBreak: "#5151de",
+        piecePreview: "#1f1fc8",
+        piece: "#3232d8ad",
     }
 
     private static _container: HTMLElement;
@@ -102,17 +103,17 @@ export class UI {
 
         for (let y = 0; y < Board.BOARD_SIZE; y++) {
             for (let x = 0; x < Board.BOARD_SIZE; x++) {
-                switch (board.visibleBoard[y * Board.BOARD_SIZE + x]) {
-                    case BoardLabel.Empty:
+                switch (board.tiles[y * Board.BOARD_SIZE + x]) {
+                    case TileLabel.Empty:
                         this._boardContext.fillStyle = UI.backgroundColorForEmptyTile([x,y]);
                         break;
-                    case BoardLabel.Filled:
+                    case TileLabel.Filled:
                         this._boardContext.fillStyle = UI.COLORS.filled;
                         break;
-                    case BoardLabel.CurrentPiece:
+                    case TileLabel.CurrentPiece:
                         this._boardContext.fillStyle = UI.COLORS.piecePreview;
                         break;
-                    case BoardLabel.WillBreak:
+                    case TileLabel.WillBreak:
                         this._boardContext.fillStyle = UI.COLORS.willBreak;
                         break;
                 }
@@ -164,7 +165,7 @@ export class UI {
                     block[1] * (UI.BLOCK_SIZE + UI.GAP_SIZE)
                 ]
 
-                pieceCanvasContext.fillStyle = UI.COLORS.piece;
+                pieceCanvasContext.fillStyle = piece.placable ? UI.COLORS.filled : UI.COLORS.willBreak;
                 pieceCanvasContext.fillRect(
                     blockPosition[0],
                     blockPosition[1],

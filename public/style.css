@@ -23,6 +23,7 @@ div#game_container {
 div#debug_container {
     flex: 1;
     color: white;
+    padding: 1em;
 }
 
 canvas#board_canvas {
