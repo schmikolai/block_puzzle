@@ -2,9 +2,9 @@ import { Board, TileLabel } from "./Board";
 import { PlacablePiece } from "./Piece";
 
 export class UI {
-    public static readonly BLOCK_SIZE = 40;
+    public static BLOCK_SIZE = 35;
     public static readonly GAP_SIZE = 2;
-    public static readonly POSITION_OFFSET = [15, 15];
+    public static readonly POSITION_OFFSET = [0, 0];
 
     public static readonly COLORS = {
         filled: "#3232d8",
@@ -46,6 +46,10 @@ export class UI {
     }
 
     public static init(container: HTMLElement, numberOfPieces: number) {
+
+        // Setup environment from window dimensions
+        UI.BLOCK_SIZE = Math.min(UI.BLOCK_SIZE, Math.floor((window.screen.width - 15*UI.GAP_SIZE) / 15));
+
         // Create board canvas.
         UI._boardCanvas = document.createElement("canvas");
         UI._boardCanvas.id = "board_canvas";
@@ -61,6 +65,13 @@ export class UI {
         UI._scoreLabel.style.left = `${UI._boardCanvas.width}px`;
         UI._scoreLabel.id = "score";
         container.append(UI._scoreLabel);
+
+        // Create help button.
+        const helpButton = document.createElement("button");
+        helpButton.style.left = `${UI._boardCanvas.width}px`;
+        helpButton.id = "help";
+        helpButton.innerText = "*o* HELP ME DADDY UwU"
+        container.append(helpButton);
 
         // Create piece canvases.
         this._pieceCanvases = [];

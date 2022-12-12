@@ -10,6 +10,8 @@ class NoMorePossibleMovesError extends Error {}
 export class Game {
     public static readonly NUMBER_OF_PIECES = 3;
 
+    public onGameOver?: () => void;
+
     private board: Board;
     private controller: Controller;
 
@@ -30,6 +32,7 @@ export class Game {
         } catch (error) {
             if (error instanceof NoMorePossibleMovesError) {
                 console.log("Game over");
+                this.onGameOver && this.onGameOver();
                 return;
             }
             throw error;
@@ -40,7 +43,6 @@ export class Game {
         while (true) {
             // Generate next set of pieces.
             this._piecesToPlace = this.providePieces();
-            this.fullRender();
 
             // Let the controller place all pieces.
             while (this._piecesToPlace.filter(p => p !== undefined).length) {
@@ -66,6 +68,7 @@ export class Game {
                 }
                 this._piecesToPlace[turn.piece] = undefined;
                 UI.renderScore(this._score);
+                this.fullRender();
             }
         }
     }

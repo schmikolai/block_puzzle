@@ -3,12 +3,45 @@ import { PlayerController, OneTurnAI, AllPiecesAI } from "./Controller";
 import { UI } from "./UI";
 
 document.addEventListener("DOMContentLoaded", () => {
-    const container = document.getElementById("game_container") as HTMLCanvasElement;
+    const container = document.getElementById("game_container") as HTMLElement;
 
     UI.init(container, Game.NUMBER_OF_PIECES);
-    
-    const game = new Game(new AllPiecesAI);
 
-    game.start();
+    const startScreen = document.getElementById("start_screen");
+    const gameOverScreen = document.getElementById("game_over_screen");
+
+    const startGamePlayerButton = document.getElementById("startGamePlayer");
+    const startGameAIButton = document.getElementById("startGameAI");
+    const gotoMenuButton = document.getElementById("gotoMenu");
+
+    if (!startGamePlayerButton || !startGameAIButton || !gotoMenuButton || !startScreen || !gameOverScreen) return;
+
+    const showGameOver = () => {
+        gameOverScreen.style.visibility = "visible";
+    }
+
+    startGamePlayerButton.onclick = () => {
+        container.classList.add("player");
+        container.classList.remove("ai");
+        startScreen.style.visibility = "hidden";
+        const game = new Game(new PlayerController);
+        game.onGameOver = showGameOver;
+        game.start();
+        // showGameOver();
+    }
+
+    startGameAIButton.onclick = () => {
+        container.classList.add("ai");
+        container.classList.remove("player");
+        startScreen.style.visibility = "hidden";
+        const game = new Game(new AllPiecesAI);
+        game.onGameOver = showGameOver;
+        game.start();
+    }
+
+    gotoMenuButton.onclick = () => {
+        startScreen.style.visibility = "visible";
+        gameOverScreen.style.visibility = "hidden";
+    }
 })
 

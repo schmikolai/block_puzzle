@@ -18,29 +18,52 @@ export interface Controller {
 
 export class PlayerController implements Controller {
 
+    private _debug: boolean;
+
     private _board?: Board;
     private _activePieceIndex = -1;
     private _currentPieceSelection: (PlacablePiece | undefined)[] = [];
     private _elementOffset: number[] = [];
 
+    private _daddy?: AllPiecesAI;
+
     private _resolver?: (turn: Turn) => void;
 
-    constructor() {
+    constructor(debug = false) {
+        this._debug = debug;
+
         UI.pieceCanvases.forEach((pieceCanvas, index) => {
             pieceCanvas.addEventListener("pointerdown", this.pointerDownListener.bind(this, index));
         })
         window.addEventListener("pointermove", this.pointerMoveListener.bind(this));
         window.addEventListener("pointerup", this.pointerUpListener.bind(this));
+
+        const helpButton = document.getElementById("help") as HTMLButtonElement;
+        helpButton.onclick = this.requestHelp.bind(this);
     }
 
     placePiece(board: Board, pieces: (PlacablePiece | undefined)[]): Promise<Turn> {
         this._board = board;
         this._currentPieceSelection = pieces;
 
+        if (this._daddy) {
+            const daddysResponse = this._daddy.placePiece(board, pieces);
+            if (pieces.filter(p=> !!p).length == 1) {
+                this._daddy = undefined;
+                UI.disablePieceAnimation();
+            }
+            return daddysResponse
+        }
+
         return new Promise((resolve) => {
             this._resolver = resolve;
-    
         })
+    }
+
+    private requestHelp() {
+        if (!this._board) return;
+        this._daddy = new AllPiecesAI();
+        this._daddy.placePiece(this._board, this._currentPieceSelection).then(turn => this._resolver && this._resolver(turn));
     }
 
     private pointerDownListener(index: number, event: PointerEvent) {
@@ -52,16 +75,16 @@ export class PlayerController implements Controller {
     }
 
     private pointerMoveListener(event: PointerEvent) {
-        Debug.debugValue("Active element", this._activePieceIndex);
+        this._debug && Debug.debugValue("Active element", this._activePieceIndex);
         if (!this._board || this._activePieceIndex < 0) return;
 
         const activePiece = this._currentPieceSelection[this._activePieceIndex];
         if (!activePiece) return;
 
         const boardPositionInWindow = UI.positionInWindow;
-        Debug.debugValue("Board offset", boardPositionInWindow.toString());
-        Debug.debugValue("Piece canvas offset", UI.pieceCanvasOffsets[this._activePieceIndex].toString());
-        Debug.debugValue("Event Offset", `${event.offsetX} | ${event.offsetY}`)
+        this._debug && Debug.debugValue("Board offset", boardPositionInWindow.toString());
+        this._debug && Debug.debugValue("Piece canvas offset", UI.pieceCanvasOffsets[this._activePieceIndex].toString());
+        this._debug && Debug.debugValue("Event Offset", `${event.offsetX} | ${event.offsetY}`)
 
         activePiece.floatPosition = [
             event.clientX - this._elementOffset[0] - UI.pieceCanvasOffsets[this._activePieceIndex][0] - boardPositionInWindow[0],
@@ -91,13 +114,13 @@ export class PlayerController implements Controller {
                 activePiece.floatPosition[0] + UI.pieceCanvasOffsets[this._activePieceIndex][0],
                 activePiece.floatPosition[1] + UI.pieceCanvasOffsets[this._activePieceIndex][1]
             ])
-        
+
             this._resolver && this._resolver({
                 piece: this._activePieceIndex,
                 position: tile
             });
         } finally {
-            activePiece.floatPosition = [0,0];
+            activePiece.floatPosition = [0, 0];
             this._activePieceIndex = -1;
             UI.renderPieces(this._currentPieceSelection);
         }
@@ -161,11 +184,13 @@ export class AllPiecesAI implements Controller {
 
     private turnQueue: Turn[] = [];
     private numberOfPossibleMoves = 0;
-    private _plot: Plot;
+    private _plot?: Plot;
 
-    public constructor() {
+    public constructor(plotValues = false) {
         UI.enablePieceAnimation(AllPiecesAI.TURN_DELAY);
-        this._plot = new Plot();
+        if (plotValues) {
+            this._plot = new Plot();
+        }
     }
 
     async placePiece(board: Board, pieces: (PlacablePiece | undefined)[]): Promise<Turn> {
@@ -177,7 +202,7 @@ export class AllPiecesAI implements Controller {
             this.turnQueue = (await this.checkMoves(board, pieces, [])).turns;
             console.timeEnd("Evaluate moves");
             console.log(this.numberOfPossibleMoves, "possible moves evaluated.");
-            this._plot.logValue(this.numberOfPossibleMoves);
+            this._plot?.logValue(this.numberOfPossibleMoves);
         }
 
         const nextTurn = this.turnQueue.shift();
