@@ -38,11 +38,13 @@ export class Plot {
 
     public logValue(value: number) {
         const dataset = this._chart.data.datasets[0].data;
-        dataset.unshift(value);
-        while (dataset.length > Plot.MAX_DATAPOINTS) {
-            dataset.pop();
+        dataset.push(value);
+        while (dataset.length < Plot.MAX_DATAPOINTS) {
+            dataset.unshift(null);
         }
-        // this._chart.data.datasets[0].data = dataset;
-        this._chart.update();
+        while (dataset.length > Plot.MAX_DATAPOINTS) {
+            dataset.shift();
+        }
+        this._chart.update("none");
     }
 }

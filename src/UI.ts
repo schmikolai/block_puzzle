@@ -14,7 +14,8 @@ export class UI {
 
     public static readonly COLORS = {
         filled: "#0045ff",
-        empty: "#aaa",
+        emptyA: "#aaa",
+        emptyB: "#ddd",
         willBreak: "#444",
         piecePreview: "#00b000",
         piece: "#7777ffad"
@@ -103,7 +104,7 @@ export class UI {
             for (let x = 0; x < Board.BOARD_SIZE; x++) {
                 switch (board.visibleBoard[y * Board.BOARD_SIZE + x]) {
                     case BoardLabel.Empty:
-                        this._boardContext.fillStyle = UI.COLORS.empty;
+                        this._boardContext.fillStyle = UI.backgroundColorForEmptyTile([x,y]);
                         break;
                     case BoardLabel.Filled:
                         this._boardContext.fillStyle = UI.COLORS.filled;
@@ -213,5 +214,18 @@ export class UI {
             throw Error("Position outside of board");
         }
         return [tileX, tileY];
+    }
+
+    private static backgroundColorForEmptyTile(position: number[]) {
+        const gridSize = 3;
+
+        const downscaledPosition = [
+            Math.floor(position[0] / gridSize),
+            Math.floor(position[1] / gridSize)
+        ]
+
+        const flatIndex = downscaledPosition[0] + Math.floor(downscaledPosition[1] * Board.BOARD_SIZE / gridSize);
+
+        return flatIndex % 2 ? UI.COLORS.emptyA : UI.COLORS.emptyB;
     }
 }

@@ -7,7 +7,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     UI.init(container, Game.NUMBER_OF_PIECES);
     
-    const game = new Game(new PlayerController);
+    const game = new Game(new AllPiecesAI);
 
     game.start();
 })
