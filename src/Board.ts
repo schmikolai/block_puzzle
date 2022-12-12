@@ -130,6 +130,15 @@ export class Board {
         return true;
     }
 
+    public canHoldPiece(piece: Piece): boolean {
+        for(let x = 0; x <= Board.BOARD_SIZE - piece.dimensions[0]; x++) {
+            for(let y = 0; y <= Board.BOARD_SIZE - piece.dimensions[1]; y++) {
+                if (this.isValidPiecePosition(piece, [x,y])) return true;
+            }
+        }
+        return false;
+    }
+
     public resetVisibleBoard() {
         this._shownTiles = [...this._fixedTiles];
     }

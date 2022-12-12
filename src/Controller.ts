@@ -1,6 +1,6 @@
-import { Piece } from "./Piece";
+import { Piece, PlacablePiece } from "./Piece";
 import { Board } from "./Board";
-import { UI, PlacablePiece } from "./UI";
+import { UI } from "./UI";
 import { Plot } from "./Plot";
 import { Debug } from "./Debug";
 
@@ -12,7 +12,7 @@ interface Turn {
 
 
 export interface Controller {
-    placePiece: (board: Board, pieces: (Piece | undefined)[]) => Promise<Turn>;
+    placePiece: (board: Board, pieces: (PlacablePiece | undefined)[]) => Promise<Turn>;
 }
 
 
@@ -33,15 +33,9 @@ export class PlayerController implements Controller {
         window.addEventListener("pointerup", this.pointerUpListener.bind(this));
     }
 
-    placePiece(board: Board, pieces: (Piece | undefined)[]): Promise<Turn> {
+    placePiece(board: Board, pieces: (PlacablePiece | undefined)[]): Promise<Turn> {
         this._board = board;
-        this._currentPieceSelection = pieces.map((piece) => {
-            if (piece === undefined) return undefined;
-            return {
-                piece,
-                floatPosition: [0, 0]
-            }
-        });
+        this._currentPieceSelection = pieces;
 
         return new Promise((resolve) => {
             this._resolver = resolve;
@@ -118,7 +112,7 @@ function delay(milliseconds: number) {
 
 
 export class OneTurnAI implements Controller {
-    async placePiece(board: Board, pieces: (Piece | undefined)[]): Promise<Turn> {
+    async placePiece(board: Board, pieces: (PlacablePiece | undefined)[]): Promise<Turn> {
         let bestTurn = {
             piece: -1,
             position: [0, 0],
@@ -134,7 +128,7 @@ export class OneTurnAI implements Controller {
                 for (let x = 0; x < Board.BOARD_SIZE; x++) {
                     const nextBoard = board.clone();
                     try {
-                        nextBoard.placePiece(piece, [x, y]);
+                        nextBoard.placePiece(piece.piece, [x, y]);
                     } catch {
                         continue;
                     }
@@ -174,7 +168,7 @@ export class AllPiecesAI implements Controller {
         this._plot = new Plot();
     }
 
-    async placePiece(board: Board, pieces: (Piece | undefined)[]): Promise<Turn> {
+    async placePiece(board: Board, pieces: (PlacablePiece | undefined)[]): Promise<Turn> {
 
         await delay(10);
         if (this.turnQueue.length === 0) {
@@ -191,24 +185,20 @@ export class AllPiecesAI implements Controller {
 
         UI.renderPieces(pieces.map((piece, index) => {
             if (piece === undefined) return undefined;
-            const positionedPiece = {
-                piece,
-                floatPosition: [0, 0]
-            }
             if (index == nextTurn.piece) {
                 const desiredPosition = UI.tileToCoordinate(nextTurn.position);
-                positionedPiece.floatPosition = [
+                piece.floatPosition = [
                     desiredPosition[0] - UI.pieceCanvasOffsets[index][0],
                     desiredPosition[1] - UI.pieceCanvasOffsets[index][1]
                 ]
             }
-            return positionedPiece;
+            return piece;
         }));
         await delay(AllPiecesAI.TURN_DELAY);
 
         const piece = pieces[nextTurn.piece];
         if (piece) {
-            board.previewPiece(piece, nextTurn.position);
+            board.previewPiece(piece.piece, nextTurn.position);
             UI.renderBoard(board);
         }
         await delay(AllPiecesAI.TURN_DELAY);
@@ -216,7 +206,7 @@ export class AllPiecesAI implements Controller {
         return nextTurn;
     }
 
-    private async checkMoves(board: Board, pieces: (Piece | undefined)[], turns: Turn[]): Promise<Move> {
+    private async checkMoves(board: Board, pieces: (PlacablePiece | undefined)[], turns: Turn[]): Promise<Move> {
         if (pieces.every(p => p === undefined)) {
             return {
                 turns,
@@ -238,17 +228,17 @@ export class AllPiecesAI implements Controller {
             const remainingPieces = [...pieces];
             remainingPieces[i] = undefined;
 
-            for (let y = 0; y < Board.BOARD_SIZE - piece.dimensions[1]; y++) {
-                for (let x = 0; x < Board.BOARD_SIZE - piece.dimensions[0]; x++) {
+            for (let y = 0; y < Board.BOARD_SIZE - piece.piece.dimensions[1]; y++) {
+                for (let x = 0; x < Board.BOARD_SIZE - piece.piece.dimensions[0]; x++) {
                     try {
-                        board.previewPiece(piece, [x, y]);
+                        board.previewPiece(piece.piece, [x, y]);
                     } catch {
                         continue;
                     }
                     const nextBoard = board.clone();
-                    nextBoard.placePiece(piece, [x, y]);
+                    nextBoard.placePiece(piece.piece, [x, y]);
 
-                    if (nextBoard.numberOfEdges === (numberOfEdgesOfCurrentBoard + piece.numberOfEdges)) continue;
+                    if (nextBoard.numberOfEdges === (numberOfEdgesOfCurrentBoard + piece.piece.numberOfEdges)) continue;
 
                     const nextMove = await this.checkMoves(nextBoard, remainingPieces, [...turns, { piece: i, position: [x, y] }]);
                     this.numberOfPossibleMoves++;

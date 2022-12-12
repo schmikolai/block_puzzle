@@ -1,3 +1,9 @@
+export interface PlacablePiece {
+    piece: Piece;
+    placable: boolean;
+    floatPosition: number[];
+}
+
 export class Piece {
     private _blocks: number[][];
     private _dimensions: number[];

@@ -1,12 +1,5 @@
 import { Board, TileLabel } from "./Board";
-import { Piece } from "./Piece";
-
-
-export class PlacablePiece {
-    public piece!: Piece;
-    public placable!: boolean;
-    public floatPosition!: number[];
-}
+import { PlacablePiece } from "./Piece";
 
 export class UI {
     public static readonly BLOCK_SIZE = 40;
@@ -19,7 +12,8 @@ export class UI {
         emptyB: "#5c5c5c",
         willBreak: "#5151de",
         piecePreview: "#1f1fc8",
-        piece: "#3232d8ad",
+        placablePiece: "#3232d8",
+        nonPlacablePiece: "#3232d85c"
     }
 
     private static _container: HTMLElement;
@@ -156,16 +150,17 @@ export class UI {
             pieceCanvas.style.transform = `translate(${piece.floatPosition[0]}px, ${piece.floatPosition[1]}px)`;
 
             // Don't redraw canvas if blocks did not change
-            if (piece.piece.blocks.toString() == previousPiece?.piece.blocks.toString()) continue;
+            // if (piece.placable == previousPiece?.placable && piece.piece.blocks.toString() == previousPiece?.piece.blocks.toString()) continue;
 
             // Draw blocks of piece to canvas
+            pieceCanvasContext.clearRect(0, 0, pieceCanvas.width, pieceCanvas.height);
+            pieceCanvasContext.fillStyle = piece.placable ? UI.COLORS.placablePiece : UI.COLORS.nonPlacablePiece;
             for (const block of piece.piece.blocks) {
                 const blockPosition = [
                     block[0] * (UI.BLOCK_SIZE + UI.GAP_SIZE),
                     block[1] * (UI.BLOCK_SIZE + UI.GAP_SIZE)
                 ]
 
-                pieceCanvasContext.fillStyle = piece.placable ? UI.COLORS.filled : UI.COLORS.willBreak;
                 pieceCanvasContext.fillRect(
                     blockPosition[0],
                     blockPosition[1],
