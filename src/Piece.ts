@@ -117,6 +117,17 @@ const bigT = new Piece([
     [1, 2]
 ])
 
+const dia2 = new Piece([
+    [0, 0],
+    [1, 1]
+])
+
+const dia3 = new Piece([
+    [0, 0],
+    [1, 1],
+    [2, 2]
+])
+
 export const availablePieces = [
     blob,
     bigBlob,
@@ -152,4 +163,8 @@ export const availablePieces = [
     bigT.rotate(1),
     bigT.rotate(2),
     bigT.rotate(3),
+    dia2,
+    dia2.rotate(1),
+    dia3,
+    dia3.rotate(1)
 ]

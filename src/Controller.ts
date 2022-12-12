@@ -1,5 +1,8 @@
 import { Piece } from "./Piece";
 import { Board } from "./Board";
+import { UI, PlacablePiece } from "./UI";
+import { Plot } from "./Plot";
+import { Debug } from "./Debug";
 
 
 interface Turn {
@@ -14,62 +17,96 @@ export interface Controller {
 
 
 export class PlayerController implements Controller {
-    placePiece(board: Board, pieces: (Piece | undefined)[]): Promise<Turn> {
-        return new Promise((resolve) => {
-            let pieceIndex = -1;
 
-            const keyDownListener = (event: any) => {
-                switch (event.key) {
-                    case "1":
-                        pieceIndex = 0;
-                        break;
-                    case "2":
-                        pieceIndex = 1;
-                        break;
-                    case "3":
-                        pieceIndex = 2;
-                        break;
-                }
-            }
+    private _board?: Board;
+    private _activePieceIndex = -1;
+    private _currentPieceSelection: (PlacablePiece | undefined)[] = [];
+    private _elementOffset: number[] = [];
 
-            const pointerMoveListener = (event: any) => {
-                const posX = Math.floor((event.offsetX - Board.POSITION_OFFSET[0]) / (Board.BLOCK_SIZE + Board.GAP_SIZE));
-                const posY = Math.floor((event.offsetY - Board.POSITION_OFFSET[1]) / (Board.BLOCK_SIZE + Board.GAP_SIZE));
+    private _resolver?: (turn: Turn) => void;
 
-                if (pieceIndex >= 0 && pieces[pieceIndex] !== undefined) {
-                    try {
-                        const piece = pieces[pieceIndex];
-                        if (piece === undefined) throw Error("Invalid piece");
-                        board.previewPiece(piece, [posX, posY]);
-                    } catch (error) {
-                        board.resetVisibleBoard();
-                    } finally {
-                        board.render();
-                    }
-                }
-            }
-
-            const pointerUpListener = (event: any) => {
-                const posX = Math.floor((event.offsetX - Board.POSITION_OFFSET[0]) / (Board.BLOCK_SIZE + Board.GAP_SIZE));
-                const posY = Math.floor((event.offsetY - Board.POSITION_OFFSET[1]) / (Board.BLOCK_SIZE + Board.GAP_SIZE));
-
-                if (pieceIndex >= 0 && pieces[pieceIndex] !== undefined) {
-                    window.removeEventListener("keydown", keyDownListener);
-                    board.canvas.removeEventListener("pointermove", pointerMoveListener);
-                    board.canvas.removeEventListener("pointerup", pointerUpListener);
-                    resolve({
-                        piece: pieceIndex,
-                        position: [posX, posY]
-                    });
-                }
-            }
-
-            window.addEventListener("keydown", keyDownListener);
-
-            board.canvas.addEventListener("pointermove", pointerMoveListener);
-
-            board.canvas.addEventListener("pointerup", pointerUpListener)
+    constructor() {
+        UI.pieceCanvases.forEach((pieceCanvas, index) => {
+            pieceCanvas.addEventListener("pointerdown", this.pointerDownListener.bind(this, index));
         })
+        window.addEventListener("pointermove", this.pointerMoveListener.bind(this));
+        window.addEventListener("pointerup", this.pointerUpListener.bind(this));
+    }
+
+    placePiece(board: Board, pieces: (Piece | undefined)[]): Promise<Turn> {
+        this._board = board;
+        this._currentPieceSelection = pieces.map((piece) => {
+            if (piece === undefined) return undefined;
+            return {
+                piece,
+                floatPosition: [0, 0]
+            }
+        });
+
+        return new Promise((resolve) => {
+            this._resolver = resolve;
+    
+        })
+    }
+
+    private pointerDownListener(index: number, event: PointerEvent) {
+        this._activePieceIndex = index;
+        this._elementOffset = [
+            event.offsetX,
+            event.offsetY
+        ]
+    }
+
+    private pointerMoveListener(event: PointerEvent) {
+        Debug.debugValue("Active element", this._activePieceIndex);
+        if (!this._board || this._activePieceIndex < 0) return;
+
+        const activePiece = this._currentPieceSelection[this._activePieceIndex];
+        if (!activePiece) return;
+
+        const boardPositionInWindow = UI.positionInWindow;
+        Debug.debugValue("Board offset", boardPositionInWindow.toString());
+        Debug.debugValue("Piece canvas offset", UI.pieceCanvasOffsets[this._activePieceIndex].toString());
+        Debug.debugValue("Event Offset", `${event.offsetX} | ${event.offsetY}`)
+
+        activePiece.floatPosition = [
+            event.clientX - this._elementOffset[0] - UI.pieceCanvasOffsets[this._activePieceIndex][0] - boardPositionInWindow[0],
+            event.clientY - this._elementOffset[1] - UI.pieceCanvasOffsets[this._activePieceIndex][1] - boardPositionInWindow[1]
+        ]
+
+        UI.renderPieces(this._currentPieceSelection);
+
+        try {
+            const tileUnderneathPiece = UI.coordinateToTile([
+                activePiece.floatPosition[0] + UI.pieceCanvasOffsets[this._activePieceIndex][0],
+                activePiece.floatPosition[1] + UI.pieceCanvasOffsets[this._activePieceIndex][1],
+            ]);
+            this._board.previewPiece(activePiece.piece, tileUnderneathPiece);
+        } catch {
+            this._board.resetVisibleBoard();
+        } finally {
+            UI.renderBoard(this._board);
+        }
+    }
+
+    private pointerUpListener() {
+        const activePiece = this._currentPieceSelection[this._activePieceIndex];
+        if (!activePiece) return;
+        try {
+            const tile = UI.coordinateToTile([
+                activePiece.floatPosition[0] + UI.pieceCanvasOffsets[this._activePieceIndex][0],
+                activePiece.floatPosition[1] + UI.pieceCanvasOffsets[this._activePieceIndex][1]
+            ])
+        
+            this._resolver && this._resolver({
+                piece: this._activePieceIndex,
+                position: tile
+            });
+        } finally {
+            activePiece.floatPosition = [0,0];
+            this._activePieceIndex = -1;
+            UI.renderPieces(this._currentPieceSelection);
+        }
     }
 }
 
@@ -126,30 +163,53 @@ interface Move {
 
 
 export class AllPiecesAI implements Controller {
-    private static TURN_DELAY = 150;
+    private static readonly TURN_DELAY = 120;
 
     private turnQueue: Turn[] = [];
     private numberOfPossibleMoves = 0;
+    private _plot: Plot;
+
+    public constructor() {
+        UI.enablePieceAnimation(AllPiecesAI.TURN_DELAY);
+        this._plot = new Plot();
+    }
 
     async placePiece(board: Board, pieces: (Piece | undefined)[]): Promise<Turn> {
 
-        await delay(AllPiecesAI.TURN_DELAY);
+        await delay(10);
         if (this.turnQueue.length === 0) {
             this.numberOfPossibleMoves = 0;
             console.time("Evaluate moves");
             this.turnQueue = (await this.checkMoves(board, pieces, [])).turns;
             console.timeEnd("Evaluate moves");
             console.log(this.numberOfPossibleMoves, "possible moves evaluated.");
-            console.log(this.turnQueue);
+            this._plot.logValue(this.numberOfPossibleMoves);
         }
 
         const nextTurn = this.turnQueue.shift();
         if (!nextTurn) throw Error("Error with turn queue happened");
 
+        UI.renderPieces(pieces.map((piece, index) => {
+            if (piece === undefined) return undefined;
+            const positionedPiece = {
+                piece,
+                floatPosition: [0, 0]
+            }
+            if (index == nextTurn.piece) {
+                const desiredPosition = UI.tileToCoordinate(nextTurn.position);
+                positionedPiece.floatPosition = [
+                    desiredPosition[0] - UI.pieceCanvasOffsets[index][0],
+                    desiredPosition[1] - UI.pieceCanvasOffsets[index][1]
+                ]
+            }
+            return positionedPiece;
+        }));
+        await delay(AllPiecesAI.TURN_DELAY);
+
         const piece = pieces[nextTurn.piece];
         if (piece) {
             board.previewPiece(piece, nextTurn.position);
-            board.render();
+            UI.renderBoard(board);
         }
         await delay(AllPiecesAI.TURN_DELAY);
 
@@ -185,8 +245,6 @@ export class AllPiecesAI implements Controller {
                     } catch {
                         continue;
                     }
-                    // board.render()
-                    // await delay(15)
                     const nextBoard = board.clone();
                     nextBoard.placePiece(piece, [x, y]);
 
@@ -203,6 +261,4 @@ export class AllPiecesAI implements Controller {
 
         return bestNextMove;
     }
-
-    // private isSurroundedByEmpty
 }

@@ -1,15 +1,13 @@
-import { Board } from "./Board";
 import { Game } from "./Game";
 import { PlayerController, OneTurnAI, AllPiecesAI } from "./Controller";
+import { UI } from "./UI";
 
 document.addEventListener("DOMContentLoaded", () => {
-    const canvas = document.getElementById("game") as HTMLCanvasElement;
-    const scoreLabel = document.createElement("span");
-    document.body.append(scoreLabel);
-    
-    const board = new Board(canvas, true);
+    const container = document.getElementById("game_container") as HTMLCanvasElement;
 
-    const game = new Game(board, new AllPiecesAI, scoreLabel);
+    UI.init(container, Game.NUMBER_OF_PIECES);
+    
+    const game = new Game(new PlayerController);
 
     game.start();
 })

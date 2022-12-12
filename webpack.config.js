@@ -16,13 +16,13 @@ module.exports = {
         filename: 'bundle.js',
         path: path.resolve(__dirname, 'dist'),
     },
-    // plugins: [
-    //     new CopyPlugin({
-    //         patterns: [
-    //             {from: "./public", to: "./dist"}
-    //         ]
-    //     })
-    // ],
+    plugins: [
+        new CopyPlugin({
+            patterns: [
+                {from: "public", to: "dist"}
+            ]
+        })
+    ],
     devServer: {
         // contentBase: path.join(__dirname, 'dist'),
         port: 3000,
