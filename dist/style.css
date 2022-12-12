@@ -1,0 +1,57 @@
+/* html, body {
+    padding: 0;
+    margin: 0;
+} */
+
+* {
+    
+    touch-action: none;
+}
+
+body {
+    background-color: #222;
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+}
+
+div#game_container {
+    position: relative;
+    margin: 0.5em;
+}
+
+div#debug_container {
+    flex: 1;
+    color: white;
+    padding: 1em;
+}
+
+canvas#board_canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    background-color: #fff1;
+    border-color: #555;
+    border-radius: 5px;
+    border-style: solid;
+    border-width: 2px;
+}
+
+span#score {
+    position: absolute;
+    margin: 1.2em;
+    color: white;
+    font-size: 3em;
+    font-family: Arial, Helvetica, sans-serif;
+    font-weight: bold;
+    text-shadow: #bfda 1px 1px 5px;
+}
+
+canvas.piece_canvas {
+    position: absolute;
+}
+
+canvas.piece_canvas.auto-animate {
+    transition-property: transform;
+    transition-timing-function: cubic-bezier();
+}

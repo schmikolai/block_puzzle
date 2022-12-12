@@ -19,7 +19,7 @@ module.exports = {
     plugins: [
         new CopyPlugin({
             patterns: [
-                {from: "public", to: "dist"}
+                {from: "public", to: "."}
             ]
         })
     ],
