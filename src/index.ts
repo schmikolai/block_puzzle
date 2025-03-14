@@ -1,9 +1,11 @@
 import { Game } from "./Game";
-import { PlayerController, OneTurnAI, AllPiecesAI } from "./Controller";
+import { PlayerController, AllPiecesAI } from "./Controller";
 import { UI } from "./UI";
 
 document.addEventListener("DOMContentLoaded", () => {
     const container = document.getElementById("game_container") as HTMLElement;
+
+    const debug = new URLSearchParams(window.location.search).get("debug") === "true";
 
     UI.init(container, Game.NUMBER_OF_PIECES);
 
@@ -24,7 +26,7 @@ document.addEventListener("DOMContentLoaded", () => {
         container.classList.add("player");
         container.classList.remove("ai");
         startScreen.style.visibility = "hidden";
-        const game = new Game(new PlayerController);
+        const game = new Game(new PlayerController(debug));
         game.onGameOver = showGameOver;
         game.start();
         // showGameOver();
@@ -34,7 +36,7 @@ document.addEventListener("DOMContentLoaded", () => {
         container.classList.add("ai");
         container.classList.remove("player");
         startScreen.style.visibility = "hidden";
-        const game = new Game(new AllPiecesAI);
+        const game = new Game(new AllPiecesAI(debug));
         game.onGameOver = showGameOver;
         game.start();
     }
