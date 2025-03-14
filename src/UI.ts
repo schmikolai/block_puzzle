@@ -70,7 +70,7 @@ export class UI {
         const helpButton = document.createElement("button");
         helpButton.style.left = `${UI._boardCanvas.width}px`;
         helpButton.id = "help";
-        helpButton.innerText = "*o* HELP ME DADDY UwU"
+        helpButton.innerText = "AI-Solve";
         container.append(helpButton);
 
         // Create piece canvases.

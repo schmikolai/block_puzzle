@@ -1,4 +1,4 @@
-import { Piece, PlacablePiece } from "./Piece";
+import { PlacablePiece } from "./Piece";
 import { Board } from "./Board";
 import { UI } from "./UI";
 import { Plot } from "./Plot";
@@ -25,7 +25,7 @@ export class PlayerController implements Controller {
     private _currentPieceSelection: (PlacablePiece | undefined)[] = [];
     private _elementOffset: number[] = [];
 
-    private _daddy?: AllPiecesAI;
+    private _aiSolver?: AllPiecesAI;
 
     private _resolver?: (turn: Turn) => void;
 
@@ -46,13 +46,13 @@ export class PlayerController implements Controller {
         this._board = board;
         this._currentPieceSelection = pieces;
 
-        if (this._daddy) {
-            const daddysResponse = this._daddy.placePiece(board, pieces);
+        if (this._aiSolver) {
+            const aiResponse = this._aiSolver.placePiece(board, pieces);
             if (pieces.filter(p=> !!p).length == 1) {
-                this._daddy = undefined;
+                this._aiSolver = undefined;
                 UI.disablePieceAnimation();
             }
-            return daddysResponse
+            return aiResponse
         }
 
         return new Promise((resolve) => {
@@ -62,8 +62,8 @@ export class PlayerController implements Controller {
 
     private requestHelp() {
         if (!this._board) return;
-        this._daddy = new AllPiecesAI();
-        this._daddy.placePiece(this._board, this._currentPieceSelection).then(turn => this._resolver && this._resolver(turn));
+        this._aiSolver = new AllPiecesAI();
+        this._aiSolver.placePiece(this._board, this._currentPieceSelection).then(turn => this._resolver && this._resolver(turn));
     }
 
     private pointerDownListener(index: number, event: PointerEvent) {
